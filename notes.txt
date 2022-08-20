@@ -1,0 +1,426 @@
+**pitch is the rotation about the Y axis, the roll is the rotation about the X axis 
+	and the yaw is the rotation about the Z axis.
+
+**The formulas to convert the acceleration values to pitch and roll are as follows.
+	Roll = atan2(Y, Z) * 180/PI;
+	Pitch = atan2(X, sqrt(Y*Y + Z*Z)) * 180/PI;
+
+**pitch = 180 * atan (accelerationX/sqrt(accelerationY*accelerationY + accelerationZ*accelerationZ))/M_PI;
+roll = 180 * atan (accelerationY/sqrt(accelerationX*accelerationX + accelerationZ*accelerationZ))/M_PI;
+yaw = 180 * atan (accelerationZ/sqrt(accelerationX*accelerationX + accelerationZ*accelerationZ))/M_PI;
+
+
+**Simulink, it is a block-diagram environment for modeling dynamic systems and developing algorithms.
+Simulink with blocks for configuring Arduino sensors and reading and writing data from them. After creating 
+your Simulink model, you can simulate it, tune algorithm parameters, and download the completed algorithm for 
+standalone execution on the device. One particularly useful (and unique) capability offered by Simulink is the ability 
+to tune parameters live from your computer while the algorithm runs on the hardware.
+
+
+Capabilities and Features
+
+With MATLAB® Support Package for Arduino® Hardware, you can use MATLAB to interactively communicate with an Arduino board over a USB cable. The package enables you to perform tasks such as:
+
+Acquire analog and digital sensor data from your Arduino board
+Drive DC, servo, and stepper motors (also supports Adafruit Motor Shield)
+Access peripheral devices and sensors connected over I2C or SPI
+Build custom add-ons to interface with additional hardware and software libraries
+Control other devices with digital and PWM outputs
+
+
+****************************************************************************************
+DMP 
+Accelerometer data is noisy on short time scales, and gyroscope data drifts on longer timescales, so the complementary 
+filter combines both for greater accuracy.  However, the MPU-6050 contains a digital motion processor (DMP) which can perform 
+the data fusion on the IMU chip iteslf.  Though the exact details of how the DMP does is calculations are not published, the DMP is 
+still useful because presumably Invensense has a pretty good fusion algorithm and because the DMP calculations occur on the MPU-6050 chip, freeing up processor power
+
+
+
+********************************************************************************************
+ARDUINO WITH MATLAB
+********************************************************************************************
+FUNCTIONS :
+a = arduino('port_number','board_name')
+
+methods( a )/* displays methods for class arduino*/
+
+
+****************************************************************************************************
+https://youtu.be/2t-5CCyPJ74
+
+
+
+
+
+
+
+
+
+
+**********************************************************************************
+delete(instrfindall);/*/*//*/*/*/*//*SOLVES THE PROBLEM :Open failed: Port: COM3 is not available. No ports are available.
+**********************************************************************************
+Open failed: Instrument object OBJ is an invalid object./*/***/*/*/*THE SOLUTION IS GIVEN BELOW .WE FAILED TO CREATE OBJECT OF SERIAL PORT
+ >> a=serial('COM3','BaudRate',115200);
+**********************************************************************************
+
+
+a=serial('COM3','BaudRate',115200);
+>> fopen(a)
+>> a
+
+   Serial Port Object : Serial-COM3
+
+   Communication Settings 
+      Port:               COM3
+      BaudRate:           115200
+      Terminator:         'LF'
+
+   Communication State 
+      Status:             open
+      RecordStatus:       off
+
+   Read/Write State  
+      TransferStatus:     idle
+      BytesAvailable:     148
+      ValuesReceived:     0
+      ValuesSent:         0
+ 
+
+
+
+fprintf(a,'g')
+for i=1:100
+fscanf(a,'%f %f %f')
+end
+
+ans =
+
+   92.4800
+   72.2200
+    1.8300
+
+
+*****************************************************************************************
+puase (2) before fprintf(s,'0'); and it works now wihtout the error.
+
+get(serial_object )....................returns property values of serial_object.eg inputbuffersize,outputbuffersize,etc
+
+
+if you attempt to read more data than can fit in the input buffer, an error is returned and no data is read.
+
+ flush the input buffer using the function flushinput.m from the instrument control toolbox.
+
+flushinput(Serial_Port_obj) function in matlab. This function clears all the data that are stored in the input buffer.
+
+
+Note that all the buffer are FIFO (First In -> First Out).
+
+
+
+1 4 7 10 ....
+2 5 8 ....
+3 6 9......
+*******************************************
+*                                                                          *
+*in one read operation we are receiving 20 bytes.   *
+*                                                                          *
+*******************************************
+
+use for only 25 iterations!
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////******************************************************************
+
+
+Some devices connected through a serial port send data to your program at a constant rate (streaming data) or send data at unpredictable intervals. You can configure the serial port to execute a function automatically to handle data whenever it arrives. This is called the "callback function" for the serial port object.
+
+There are two properties of the serial port that must be set to use this feature: the name of the function you want for the callback (BytesAvailableFcn), and the condition which should trigger executing the callback function (BytesAvailableFcnMode).
+
+There are two ways to trigger a callback function:
+
+When a certain number of bytes have been received at the serial port (typically used for binary data)
+When a certain character is received at the serial port (typically used for text or ASCII data)
+Callback functions have two required input arguments, called obj and event. obj is the serial port. For example, if you want to print the data received from the serial port, define a function for printing the data called newdata:
+
+function newdata(obj,event)
+    [d,c] = fread(obj);  % get the data from the serial port
+    % Note: for ASCII data, use fscanf(obj) to return characters instead of binary values
+    fprintf(1,'Received %d bytes\n',c);
+    disp(d)
+end
+For example, to execute the newdata function whenever 64 bytes of data are received, configure the serial port like this:
+
+s = serial(port_name);
+s.BytesAvailableFcnMode = 'byte';
+s.BytesAvailableFcnCount = 64;
+s.BytesAvailableFcn = @newdata;
+With text or ASCII data, the data is typically divided into lines with a "terminator character", just like text on a page. To execute the newdata function whenever the carriage return character is received, configure the serial port like this:
+
+s = serial(port_name);
+s.BytesAvailableFcnMode = 'terminator';
+s.Terminator = 'CR';  % the carriage return, ASCII code 13
+s.BytesAvailableFcn = @newdata;
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+C:\Program Files\MATLAB\MATLAB Production Server\R2015a\bin
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+>> a.BytesAvailableFcn=@call_back;
+>> fopen(a)
+Error using feval
+Undefined function 'call_back' for input arguments of type 'serial'.
+
+Error in instrcb (line 36)
+        feval(val{1}, obj, eventStruct, val{2:end});
+ 
+Warning: The BytesAvailableFcn is being disabled. To enable the callback property
+either connect to the hardware with FOPEN or set the BytesAvailableFcn property.
+
+
+
+SOLUTION/*/*/*/*/*/*/*/*/**/*/
+>> a.BytesAvailableFcn =@(~,~)callback(a);
+>> get(a)
+    ByteOrder = littleEndian
+    BytesAvailable = 1000
+    BytesAvailableFcn = [1x1 function_handle]
+    BytesAvailableFcnCount = 100
+    BytesAvailableFcnMode = byte
+    BytesToOutput = 0
+    ErrorFcn = 
+    InputBufferSize = 1000
+    Name = Serial-COM3
+    ObjectVisibility = on
+    OutputBufferSize = 512
+    OutputEmptyFcn = 
+    RecordDetail = compact
+    RecordMode = overwrite
+    RecordName = record.txt
+    RecordStatus = off
+    Status = open
+    Tag = 
+    Timeout = 10
+    TimerFcn = 
+    TimerPeriod = 1
+    TransferStatus = idle
+    Type = serial
+    UserData = []
+    ValuesReceived = 0
+    ValuesSent = 0
+
+    SERIAL specific properties:
+    BaudRate = 9600
+    BreakInterruptFcn = 
+    DataBits = 8
+    DataTerminalReady = on
+    FlowControl = none
+    Parity = none
+    PinStatus = [1x1 struct]
+    PinStatusFcn = 
+    Port = COM3
+    ReadAsyncMode = continuous
+    RequestToSend = on
+    StopBits = 1
+    Terminator = LF
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+Westlife - Why Do I Love You?
+
+>> a=serial('COM3','BaudRate',9600);
+>> a.BytesAvailableFcn =@mycallback;
+>> a.BytesAvailableFcnMode ='byte';
+>> fopen(a)
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+   NaN
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     2
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     3
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     4
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     5
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     6
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     7
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     8
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+     9
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+    10
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+    11
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+    12
+
+
+event = 
+
+    Type: 'BytesAvailable'
+    Data: [1x1 struct]
+
+
+data =
+
+    13
+
+>> pwd
+
+ans =
+
+C:\Users\Sarvesh\Documents\Downloads
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+ 'TasksToExecute'
+Number greater than 0, indicating the number of times the timer object is to execute the TimerFcn callback. Use the TasksToExecute property to set the number of executions. To use TasksToExecute, you must set ExecutionMode to schedule multiple timer callback events.
+Default: Inf
+
+*********************clc
+clear;
+import java.awt.*;
+import java.awt.Robot;
+%import java.awt.event.*;
+R=Robot(); 
+delete(instrfindall);
+a=serial('COM3','BaudRate',115200);
+fopen(a);
+tic
+while(toc<70)
+   yaw=fscanf(a,'%c');
+   pitch=fscanf(a,'%c');
+   %l=fscanf(a,'%c');
+   %r=fscanf(a,'%c');
+   %leftclick=str2double(l);
+   %rightclick=str2double(r);
+   y=str2double(yaw);
+   p=str2double(pitch);
+   yaw1=(y*8.53765+683);%8.5375-
+   pitch1=(-4.8*p+384);%-4.8
+   R.mouseMove(ceil(yaw1),ceil(pitch1));
+   %if leftclick==1
+     %   for i=1:2
+      %      R.mousePress(InputEvent.BUTTON1_MASK);
+       %     R.mouseRelease(InputEvent.BUTTON1_MASK);
+        %end
+   %end
+   %if rightclick==1
+    %    R.mousePress(InputEvent.BUTTON1_MASK);
+     %   R.mouseRelease(InputEvent.BUTTON1_MASK);
+   %end
+end
+fclose(a);
+
+
